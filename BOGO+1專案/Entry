@@ -1,0 +1,103 @@
+function doGet(e)
+{
+  try
+  {
+    log(e);
+    var resultPage = Route(e);
+    return resultPage;
+  }
+  catch(ex)
+  {
+    log(ex);
+  }
+}
+
+function doPost(e) {
+  try
+  {
+    var msg= JSON.parse(e.postData.contents);
+    var line = init();
+    line.react(msg);
+    var line = init2();
+    line.react(msg);
+    var line = init3();
+    line.react(msg);
+    var line = init4();
+    line.react(msg);
+    var line = init5();
+    line.react(msg);
+   
+  }
+  catch(ex)
+  {
+    log(ex);
+  }
+}
+//id : userid,groupid,roomid
+//msg: JSON格式
+//LineBot傳送推播訊息 注意:有一定額度 每月超過500則會收費
+function SendPushMessage(id,msg) {
+  var line = LineApp.create(CHANNEL_ACCESS_TOKEN);  
+  line.add(msg);
+  //可接受userid,groupid,roomid
+  line.sendLinePush(id);
+}
+
+//使用LineNotify傳送文字
+function SendLineNotify(token, text)
+{
+  if(typeof token !=='undefined' && token !="")
+  {
+    var sending_url = 'https://notify-api.line.me/api/notify';  
+    if( typeof token !=='undefined')
+    {
+      log("[sendline]"+ token+":"+text);
+     
+      var param = {
+        'headers' : {'Authorization':'Bearer '+token},
+        'method' : 'post',
+        'muteHttpExceptions': true,
+        'payload': 
+        {
+          'message':text,
+          
+          //也可傳送貼圖
+          //'stickerPackageId':sticker[stickno][0].toString(),
+          //'stickerId':sticker[stickno][1].toString(),
+        }};
+      var response = UrlFetchApp.fetch(sending_url,param);
+      return JSON.parse(response.getContentText());
+    }
+  }
+  return {status:999,message:"Token is Null"};  
+}
+
+//使用LineNotify傳送圖片
+function SendLineNotifyImage(token,img,text) {
+  
+  var sending_url = 'https://notify-api.line.me/api/notify';
+  log("[sendline]"+ token+":"+text);
+
+  var boundary = "labnol";
+   
+  var attributes = "{\"name\":\"abc.pdf\", \"parent\":{\"id\":\"FOLDER_ID\"}}";
+  
+  var requestBody = Utilities.newBlob(
+    "--"+boundary+"\r\n"
+    + "Content-Disposition: form-data; name=\"message\"\r\n\r\n"
+    + text +"\r\n"+"--"+boundary+"\r\n"
+    + "Content-Disposition: form-data; name=\"imageFile\"; filename=\""+img.getName()+"\"\r\n"
+  + "Content-Type: " + img.getContentType()+"\r\n\r\n").getBytes()
+  .concat(img.getBytes())
+  .concat(Utilities.newBlob("\r\n--"+boundary+"--\r\n").getBytes());
+  
+  var options = {
+    method: "post",
+    contentType: "multipart/form-data; boundary="+boundary,
+    payload: requestBody,
+    muteHttpExceptions: true,
+    headers: {'Authorization': 'Bearer ' + token}
+  };
+
+  var request = UrlFetchApp.fetch(sending_url, options);
+}

@@ -1,0 +1,534 @@
+function init4() {
+  var line = LineApp.create(CHANNEL_ACCESS_TOKEN);
+
+  var ruleobj = [];
+
+  ruleobj.push({
+    name: "回聲", chk: function (e) {
+      var word = e.base.Data.userMessage;
+      var userdata = e.base.Data.userdata;
+      var groupdata = e.base.Data.groupdata;
+
+      return true;//if true then goto react; if false then keep go through.    
+    }, react: function (e) {
+
+      var word = e.base.Data.userMessage;
+      var userdata = e.base.Data.userdata;
+      var groupdata = e.base.Data.groupdata;
+
+      var myobjAry = word.split("+");
+      var myset1 = myobjAry[0].trim();//訂購代碼
+      var myset2 = myobjAry[1].trim();//訂購數量
+      var myset3 = myobjAry[2].trim();//代購名
+      var linenames = userdata.nickname.substr(0, 15);  //line名稱長度縮短
+
+      var range11 = sheet11.getRange("H2:Z35");//sheet11_@_參數設定_BOGO產品清單
+      var rows11 = range11.getValues();
+
+      for (var i = 0; i < rows11.length; i++) {
+        var row11 = rows11[i];
+        var sheet11_J = row11[13];//產品代號
+
+        if (myset1 == sheet11_J & myset2 >= 0 & myset2 < 100) { var RowData1 = row11[0]; }//判斷訂購產品代號及數量(列)
+
+      }
+      //==================================sheet3 產品簡介
+      var set1 = sheet3.getRange(RowData1, 2).getValue();//活動名稱
+      var set2 = sheet3.getRange(RowData1, 4).getValue();//產品代號   
+      var set3 = sheet3.getRange(RowData1, 7).getValue();//產品名稱
+      var set4 = sheet3.getRange(RowData1, 8).getValue();//單價
+      var set5 = sheet3.getRange(RowData1, 9).getValue();//PV
+      var set14 = sheet3.getRange(RowData1, 3).getValue();//天
+      var set15 = sheet3.getRange(RowData1, 5).getValue();//買   
+      var set16 = sheet3.getRange(RowData1, 6).getValue();//送
+
+      var set9 = sheet11.getRange(RowData1, 19).getValue();//各組目前訂購總組數
+      var STOP1 = sheet11.getRange(RowData1, 16).getValue();//sheet11_@_參數設定_手動結單 
+      var set18 = sheet11.getRange(RowData1, 20).getValue();//sheet11_@_參數設定_限量
+      var set21 = sheet11.getRange(RowData1, 22).getValue();//sheet11_@_參數設定_限量庫存
+      var STOP2 = sheet11.getRange(RowData1, 23).getValue();//sheet11_@_參數設定_限量結單
+      var range22 = sheet8.getRange("AL1:AO500");//sheet11_@_參數設定_BOGO產品清單
+      var rows22 = range22.getValues();
+
+      for (var i = 0; i < rows22.length; i++) {
+        var row22 = rows22[i];
+        if (row22[1] == userdata.id & row22[2] == userdata.nickname) { var Mnumber = row22[0]; }//判斷訂購產品代號及數量(列)
+      }
+
+      //==================================結單判條件
+
+      if (STOP1 != "V") {
+        var sset1 = set1;
+        if (myset2 <= set21) {
+          var url = sheet4.appendRow(["", userdata.id, userdata.nickname, set2, myset2, set4, set5, set1, set14, set3, set15, set16, getNowStr(), linenames,myset3]); //訂單資料庫
+
+          var report9 = "恭喜BOGO序號 : " + Mnumber + "\n" + "代購"+ linenames + "\n"+myset3+" : 已完成訂購 : " + myset2 + "組";
+        }
+        else {
+          var sset1 = set1;
+          var report9 = "很抱歉您的訂單\n已超過庫存量\n" + "目前庫存量剩下 : " + set21 + "組\n" + "請重新下單，謝謝!!";
+        }
+      }
+      else {
+        var sset1 = set1;
+        var sset2 = "已結單-完售";
+      }
+
+      var report1 = "單號 .[ 訂購代號 + 數量 ] _ 訂購人 " + "\n";
+      var set9 = sheet3.getRange(RowData1, 10).getValue();//各組訂購總組數
+
+      var range = sheet8.getRange("EA1:EP");//訂單資料庫
+      var rows = range.getValues();
+
+      if (STOP1 != "V") {
+        var bubble =
+        {
+          "type": "carousel",
+          "contents": [
+            {
+              "type": "bubble",
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": sset1,
+                    "size": "xl",
+                    "color": "#0000cd",
+                    "margin": "sm",
+                    "weight": "bold"
+                  },
+                  {
+                    "type": "text",
+                    "text": "[  " + set14 + "  ]",
+                    "wrap": true,
+                    "color": "#800080",
+                    "size": "xl",
+                    "flex": 2
+                  },
+
+                  {
+                    "type": "text",
+                    "text": set3,
+                    "wrap": true,
+                    "color": "#006400",
+                    "size": "lg",
+                    "flex": 2
+                  },
+                  {
+                    "type": "text",
+                    "text": "活動特價 : " + set4,
+                    "wrap": true,
+                    "color": "#b22222",
+                    "size": "lg",
+                    "flex": 2
+                  },
+
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                      {
+                        "type": "button",
+                        "action": {
+                          "type": "message",
+                          "label": "快速下單 , 按我 [ +1 ]",
+                          "text": set2 + "+1" + "+已自動執行訂購 : \n " + set14 + "，1組" + "\n詳細接龍報表如下所示"
+                        },
+                        "style": "primary",
+                        "color": "#6b8e23",
+                        "height": "md"
+                      }
+                    ],
+                    /*
+                    "cornerRadius": "xl",
+                    "borderWidth": "light",
+                    "borderColor": "#ff4500",
+                    "backgroundColor": "#ff4500",
+                    */
+                    "margin": "sm"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                      {
+                        "type": "button",
+                        "action": {
+                          "type": "message",
+                          "label": "+2",
+                          "text": set2 + "+2" + "+已自動執行訂購 : \n " + set14 + "，2組" + "\n詳細接龍報表如下所示"
+                        },
+                        "color": "#d2691e",
+                        "style": "primary"
+                      },
+                      {
+                        "type": "button",
+                        "action": {
+                          "type": "message",
+                          "label": "+3",
+                          "text": set2 + "+3" + "+已自動執行訂購 : \n " + set14 + "，3組" + "\n詳細接龍報表如下所示"
+                        },
+                        "color": "#9400d3",
+                        "style": "primary"
+
+                      },
+                      {
+                        "type": "button",
+                        "action": {
+                          "type": "message",
+                          "label": "+4",
+                          "text": set2 + "+4" + "+已自動執行訂購 : \n " + set14 + "，4組" + "\n詳細接龍報表如下所示"
+                        },
+                        "color": "#0000ff",
+                        "style": "primary"
+                      },
+                      {
+                        "type": "button",
+                        "action": {
+                          "type": "message",
+                          "label": "+5",
+                          "text": set2 + "+5" + "+已自動執行訂購 : \n " + set14 + "，5組" + "\n詳細接龍報表如下所示"
+                        },
+                        "color": "#8b0000",
+                        "style": "primary"
+
+                      },
+                    ],
+                    "position": "relative",
+                    "borderWidth": "bold",
+                    "margin": "sm"
+                  },
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": "5組以上請手動下單 : " + "\n" + "請輸入 : " + set2 + " + 數量" + "\n" + "範例 : " + set2 + "+8 " + "\n",
+                        "color": "#0000cd",
+                        "size": "lg",
+                        "margin": "xl",
+                        "wrap": true
+                      },
+
+                      {
+                        "type": "text",
+                        "text": report9 + "\n" + "右側有詳細訂購清單 ",
+                        "wrap": true,
+                        "color": "#ff4500",
+                        "size": "lg",
+                        "flex": 2
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n" + "目前訂購總組數 : " + set9 + " 組 ",
+                        "wrap": true,
+                        "color": "#0000ff",
+                        "size": "lg",
+                        "flex": 2
+                      },
+                      {
+                    "type": "button",
+                    "flex": 5,
+                    "action": {
+                      "type": "uri",
+                      "label": "前往小幫手(個人訂單查詢)",
+                      "uri": "https://liff.line.me/1645278921-kWRPP32q/?accountId=136dmcyn"
+                    },
+                    "style": "primary",
+                    "color": "#921AFF"
+                  },
+
+
+                    ],
+                    "margin": "sm"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+
+        var page_limit = 25;
+        var line_count = 0;
+
+        for (var i = 0; i < rows.length; i++) {
+          var row = rows[i];
+
+          if (row[3] == myset1 & row[4] != "") {
+            report1 += row[0] + " . " + " [ " + row[3] + " + " + row[4] + " ] _" + row[13] + '\n';
+            line_count++;
+          }
+
+          if (report1.split('\n').length > 3 && (line_count % page_limit == 0 || (i == rows.length - 1))) {
+            bubble.contents.push({
+              "type": "bubble",
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+
+                  {
+                    "type": "text",
+                    "text": "[" + set14 + "]" + "訂購清單",
+                    "wrap": true,
+                    "color": "#00008b",
+                    "align": "start",
+                    "size": "xl",
+                    "gravity": "center"
+                  },
+                  {
+                    "type": "text",
+                    "text": report1,
+                    "wrap": true,
+                    "color": "#000000",
+                    "size": "sm",
+                    "flex": 2
+                  },
+                  {
+                    "type": "text",
+                    "text": "目前訂購總組數 : " + set9 + " 組 " + "\n",
+                    "wrap": true,
+                    "color": "#0000ff",
+                    "size": "lg",
+                    "flex": 2
+                  },
+
+                ]
+              },
+            });
+            var report1 = "單號 .[ 訂購代號 + 數量 ] _ 訂購人 " + "\n";
+
+          }
+        }
+
+
+        return LineApp.LineFlexBubble("接龍清單", bubble);
+      }
+      if (STOP1 == "V") {
+        var bubble =
+        {
+          "type": "carousel",
+          "contents": [
+            {
+              "type": "bubble",
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": sset1,
+                    "wrap": true,
+                    "color": "#921AFF",
+                    "align": "start",
+                    "size": "xl",
+                    "gravity": "center"
+                  },
+                  {
+                    "type": "text",
+                    "text": "[  " + set14 + "  ]",
+                    "wrap": true,
+                    "color": "#921AFF",
+                    "size": "xl",
+                    "flex": 2
+                  },
+                  {
+                    "type": "text",
+                    "text": set3,
+                    "wrap": true,
+                    "color": "#ff4500",
+                    "size": "lg",
+                    "flex": 2
+                  },
+                  {
+                    "type": "text",
+                    "text": "活動特價 : " + set4,
+                    "wrap": true,
+                    "color": "#ff00ff",
+                    "size": "lg",
+                    "flex": 2
+                  },
+                  {
+                    "type": "button",
+                    "flex": 5,
+                    "action": {
+                      "type": "uri",
+                      "label": "前往小幫手(個人訂單查詢)",
+                      "uri": "https://liff.line.me/1645278921-kWRPP32q/?accountId=136dmcyn"
+                    },
+                    "style": "primary",
+                    "color": "#921AFF"
+                  },
+                  {
+                    "type": "text",
+                    "text": optionText1 + "\n" + sset2,
+                    "wrap": true,
+                    "color": "#921AFF",
+                    "align": "start",
+                    "size": "xl",
+                    "gravity": "center"
+                  },
+                ]
+              },
+            },
+          ]
+        }
+
+        return LineApp.LineFlexBubble("接龍清單", bubble);
+      }
+
+    },
+  });
+
+
+
+  //新增邏輯處理
+  //name:紀錄使用
+  //chk:檢查是否有回覆的需要
+  //react:處理回覆訊息
+  /*
+  ruleobj.push({name:"回聲",chk:function(e) { 
+  var word = e.base.Data.userMessage;
+  var userdata =e.base.Data.userdata;
+  var groupdata = e.base.Data.groupdata;        
+  
+  return true;//if true then goto react; if false then keep go through.    
+  }, react:function(e) {
+  var word = e.base.Data.userMessage;
+  var userdata =e.base.Data.userdata;
+  var groupdata = e.base.Data.groupdata;
+  
+  //回傳訊息
+  //return LineApp.LineText(word);    
+  },
+  });
+  */
+  //新增回覆
+  //line.add(msg);
+
+  //當機器人被加入群組時
+  line.onjoin = function (e) {
+    var groupdata = e.base.Data.groupdata;
+  };
+  //當機器人被踢出群組時
+  line.onleave = function (e) {
+    var groupdata = e.base.Data.groupdata;
+  };
+  //當有使用者被加入群組時
+  this.onmemberJoined = function (e) {
+    var groupdata = e.base.Data.groupdata;
+    var userdata = e.base.Data.userdata;
+  };
+  //當有使用者離開群組時
+  this.onmemberLeft = function (e) {
+    var groupdata = e.base.Data.groupdata;
+    var userdata = e.base.Data.userdata;
+  };
+  //當有使用者家好友時
+  this.onfollow = function (e) {
+    var userdata = e.base.Data.userdata;
+  };
+  //當有使用者封鎖時
+  this.onunfollow = function (e) {
+    var userdata = e.base.Data.userdata;
+  };
+  var trace = "";
+
+  //當接收到任何訊息時
+  line.onmessage = function (e) {
+    //注意會與以下事件重複觸發      
+  }
+  //當收到地理資訊時
+  line.onlocation = function (e) {
+    var title = e.base.Data.title;
+    var address = e.base.Data.address;
+    var latitude = e.base.Data.latitude;
+    var longtitude = e.base.Data.longitude;
+  }
+
+  //當接收到圖片時
+  line.onimage = function (e) {
+    var blob = e.base.Data.Content;
+  };
+  //當接收到音訊時
+  line.onaudio = function (e) {
+    var blob = e.base.Data.Content;
+  }
+  //當接收到影片時
+  line.onvideo = function (e) {
+    var blob = e.base.Data.Content;
+  }
+  //當接收到檔案時
+  line.onfile = function (e) {
+    var blob = e.base.Data.Content;
+  }
+  //當接收到貼圖時
+  line.onsticker = function (e) {
+    var packageId = e.base.Data.packageId;
+    var stickerId = e.base.Data.stickerId;
+  };
+  //當接收到postback時，按鈕互動時才會使用到
+
+
+
+
+
+
+  //當接收到文字訊息時
+  line.ontext = function (e) {
+    for (var i = 0; i < ruleobj.length; i++) {
+      try {
+        var obj = ruleobj[i];
+        var chk = obj.chk(e);
+        trace += i + "," + obj.name + ":" + chk + "\n";
+        if (chk) {
+          var data = obj.react(e);
+          //Line在一則回覆中最多只能回傳5個訊息塊
+          line.add(data);
+
+          //紀錄過程
+          // log(i+","+obj.name+":"+JSON.stringify(data));
+          break;
+        }
+      }
+      catch (ex) {
+        log(ex);
+      }
+    }
+    log(trace)
+  };
+
+  //當有錯誤發生時
+  line.onerror = function (e) {
+    try {
+      log(e.base.Msg);
+      if (e.base.Msg.length > 0)
+        this.sendLineReply();
+    }
+    catch (ex) {
+      log(ex);
+    }
+  };
+
+  //當流程全部走完時
+  line.onfinal = function (e) {
+    try {
+      log(e.base.Msg);
+      if (e.base.Msg.length > 0) {
+        //回覆訊息
+        this.sendLineReply();
+      }
+    }
+    catch (ex) {
+      log(ex);
+    }
+  };
+
+  return line;
+}

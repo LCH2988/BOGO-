@@ -1,0 +1,43 @@
+var UserData = function(id){
+  var ss = SpreadsheetApp.openById(sheetid);
+  var sheet = ss.getSheetByName("名單");
+  var rows = sheet.getRange("A2:D").getValues();
+  var datarow;
+   for(var i = 0;i < rows.length;i++)
+  {
+    this.position = i + 2;
+    var row = rows[i];
+    if(row[0]=="")
+      break;
+    if(row[0]==id)
+    {
+      datarow = row;
+      break;
+    }
+  }
+  
+  this.save = function()
+  {
+    sheet.getRange(this.position, 1, 1, 4).setValues([[this.id,this.nickname,this.photo,this.group]]);
+  }
+  
+  
+  if(typeof datarow !== 'undefined')
+  {
+    this.id = id;
+    this.nickname = datarow[1];
+    this.photo = datarow[2];
+    this.group = datarow[3];  
+  }
+  else
+  {
+    this.id = id;
+    this.nickname = "";
+    this.photo = "";
+    this.group = "";
+    this.save();
+  }
+  
+ 
+  return this;
+}

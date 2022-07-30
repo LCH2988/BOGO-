@@ -1,0 +1,524 @@
+var LineApp_ = {};
+
+LineApp_.Base = function (base) {
+  
+  this.base = base;
+};
+
+function create(token,msg) {
+   return new LineApp_.Base({
+    Token:token,
+    Msg:[],
+    Data:{},
+  });
+}
+
+this['LineApp'] = {
+  // Add local alias to run the library as normal code
+  create: create,
+  LineAudio:LineAudio,
+  LineSticker:LineSticker,
+  LinePositiveSticker:LinePositiveSticker,
+  LineImage:LineImage,
+  LineText:LineText,
+  LineVideo:LineVideo,
+  LineLocation:LineLocation,
+  LineFlexCarousel:LineFlexCarousel,
+  LineFlexBubble:LineFlexBubble,
+  LineBubble:LineBubble,
+  LineMessageAction:LineMessageAction,
+  LineUriAction:LineUriAction,
+  LinePostbackAction:LinePostbackAction,
+};
+
+var baseClass_ = LineApp_.Base.prototype;
+
+baseClass_.react = function(data)
+{
+    var type = data.events[0].type;
+    
+    // 取出 replayToken 和發送的訊息文字
+    var replyToken = data.events[0].replyToken;  
+    var sourceType =(typeof data.events[0].source !== 'undefined' )? data.events[0].source.type: 'undefined';
+    var userId =  (sourceType != 'undefined' && (sourceType=='group'|| sourceType=='user' || sourceType=='room'))? data.events[0].source.userId : '';
+    var groupId = (sourceType != 'undefined' && sourceType=='group')? data.events[0].source.groupId:'';
+    var timestamp = data.events[0].timestamp;
+    var roomId = (sourceType != 'undefined' && sourceType=='room')? data.events[0].source.roomId:'';
+    
+    this.base.Data = {
+      type:type,
+      replyToken:replyToken,
+      sourceType:sourceType,
+      userId:userId,
+      roomId:roomId,
+      groupId:groupId,
+      Id:(groupId!='')? groupId:
+         (roomId!='')? roomId:
+                       userId,
+      timestamp:timestamp,
+    }
+    
+    if(groupId!="")
+    {
+      var groupdata = new GroupData(groupId);      
+      this.base.Data.groupdata = groupdata;
+      //this.base.Data.commondata = groupdata;      
+    }
+    if(roomId!="")
+    {
+      var groupdata =new GroupData(roomId);
+      this.base.Data.groupdata = groupdata;
+      //this.base.Data.commondata = groupdata;      
+    }
+    
+    if(type == "join")
+    {
+      if(typeof this.onjoin !=='undefined')
+        this.onjoin(this);
+    }
+    if(type == "leave")
+    { 
+      if(typeof this.onleave !=='undefined')
+        this.onleave(this);
+    }
+    if(type == "memberJoined")
+    {
+      if(typeof this.onmemberJoined !=='undefined')
+      {
+        this.base.Data.members = data.events[0].joined.members;
+        this.onmemberJoined(this);
+      }
+    }
+    if(type == "memberLeft")
+    {
+      if(typeof this.onmemberLeft !=='undefined')
+      {
+        this.base.Data.members = data.events[0].left.members;        
+        this.onmemberLeft(this);        
+      }
+    }
+    if(type == "follow")
+    {
+      var prop = this.getUser(userId);
+      this.base.Data.User = prop;
+      if(typeof this.onfollow !=='undefined')
+        this.onfollow(this);
+    }
+    if(type == "unfollow")
+    {
+      var prop = this.getUser(userId);
+      this.base.Data.User = prop;
+      if(typeof this.onunfollow !=='undefined')
+        this.onunfollow(this);
+    }
+    if(type == "postback")
+    {
+      var userdata = new UserData(userId);
+      var prop;
+      
+      try
+      {
+        prop = this.getUser(userId);
+      }
+      catch(e)
+      {
+        log(e);
+        try
+        {
+          prop = this.getGroupMember(groupId,userId);
+        }
+        catch(e)
+        {
+          log(e);
+          try
+          {
+            prop = this.getRoomMember(roomId,userId);
+          }
+          catch(e)
+          {
+            log(e);
+          }
+        }
+      }
+      userdata.nickname = prop.displayName;   
+      userdata.photo = prop.imageurl;
+      userdata.save();
+      this.base.Data.User = prop;
+      this.base.Data.userdata = userdata;
+    
+      this.base.Data.postback = data.events[0].postback.data;
+      if(typeof this.onpostback !=='undefined')
+        this.onpostback(this);
+    }    
+    if(type == "message")
+    {
+        this.base.Data.messageId = data.events[0].message.id;
+        this.base.Data.messageType = data.events[0].message.type;
+        if(typeof userId !=='undefined')
+        {
+          var userdata = new UserData(userId);
+          var prop;
+          if(userdata.nickname == "")
+          {
+            try
+            {
+              prop = this.getUser(userId);
+            }
+            catch(e)
+            {
+              log(e);
+              try
+              {
+                prop = this.getGroupMember(groupId,userId);
+              }
+              catch(e)
+              {
+                log(e);
+                try
+                {
+                  prop = this.getRoomMember(roomId,userId);
+                }
+                catch(e)
+                {
+                  log(e);
+                }
+              }
+            }
+            userdata.nickname = prop.displayName;
+            userdata.photo = prop.imageurl;
+            userdata.save();
+            this.base.Data.User = prop;
+          }
+          this.base.Data.userdata = userdata;
+        }
+        else 
+        {
+          this.base.Msg.push(LineText("找不到LINEID，請更新到最新版本，或註冊綁定email。"));
+          log("找不到LINEID，請更新到最新版本，或註冊綁定email。");
+          if(typeof this.onerror !=='undefined')
+            this.onerror(this);
+          return;
+        }
+        if(groupId=="")
+          this.base.Data.commondata = userdata;
+      
+        if(typeof this.onmessage !=='undefined')
+          this.onmessage(this);
+        if(this.base.Data.messageType == "file")
+        {
+          var fileName =  data.events[0].message.fileName; 
+          var filedata = this.getMessageContent(this.base.Data.messageId);
+          this.base.Data.Content = filedata.getBlob();
+          this.base.Data.fileName = fileName;
+          if(typeof this.onfile !=='undefined')
+            this.onfile(this);
+        }
+        if(this.base.Data.messageType == "location")
+        {
+          this.base.Data.title = data.events[0].message.title;
+          this.base.Data.address = data.events[0].message.address;
+          this.base.Data.latitude = data.events[0].message.latitude;
+          this.base.Data.longitude = data.events[0].message.longitude;
+
+          if(typeof this.onlocation !=='undefined')
+            this.onlocation(this);
+        }
+        if(this.base.Data.messageType == "text")
+        {
+          var message = data.events[0].message.text.trim();
+          console.log(this.base.Data.userdata.nickname + ":"+message);          
+          this.base.Data.userMessage = message;
+          if(typeof this.ontext !=='undefined')
+            this.ontext(this);
+        }
+        if(this.base.Data.messageType == "sticker")
+        {
+          this.base.Data.packageId = data.events[0].message.packageId;
+          this.base.Data.stickerId = data.events[0].message.stickerId;
+          if(typeof this.onsticker !=='undefined')
+           this.onsticker(this);
+        }
+        if(this.base.Data.messageType == "image")
+        {
+          var imagedata = this.getMessageContent(this.base.Data.messageId);
+          this.base.Data.Content = imagedata.getBlob();
+          if(typeof this.onimage !=='undefined')
+            this.onimage(this);
+        }
+        if(this.base.Data.messageType == "video")
+        {
+          var videodata = this.getMessageContent(this.base.Data.messageId);
+          this.base.Data.Content = videodata.getBlob();
+          if(typeof this.onvideo !=='undefined')
+            this.onvideo(this);
+        }
+        if(this.base.Data.messageType == "audio")
+        {
+          var audiodata = this.getMessageContent(this.base.Data.messageId);
+          this.base.Data.Content = audiodata.getBlob();
+          if(typeof this.onaudio !=='undefined')
+            this.onaudio(this);
+        }
+    }
+  if(typeof this.onfinal !=='undefined')
+    this.onfinal(this);
+}
+
+
+baseClass_.add = function(msg)
+{
+  this.base.Msg = this.base.Msg.concat(msg);
+  return this;
+}
+
+baseClass_.getMessageContent = function(messageid)
+{
+  var url = 'https://api.line.me/v2/bot/message/'+messageid+'/content';
+  var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'get',
+    });
+  return response;
+}
+
+baseClass_.getUser = function(userid)
+{  
+  var url = 'https://api.line.me/v2/bot/profile/'+userid+'/';  
+  var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'get',
+    });
+  var userprop = JSON.parse(response);
+  var imageurl ="";
+  if(typeof userprop.pictureUrl !=='undefined')
+    imageurl = "https://profile.line-scdn.net/"+userprop.pictureUrl.split('/')[userprop.pictureUrl.split('/').length-1];
+  var statusMessage = (typeof userprop.statusMessage ==='undefined')? "":userprop.statusMessage;
+  return {userId:userid,displayName:userprop.displayName,imageurl:imageurl,statusMessage:statusMessage};
+}
+
+baseClass_.getGroupMember = function(groupid,userid)
+{
+  var url = 'https://api.line.me/v2/bot/group/'+groupid+'/member/'+userid+'/';
+  var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'get',
+    });
+  var userprop = JSON.parse(response);    
+  var imageurl ="";
+  if(typeof userprop.pictureUrl !=='undefined')
+    imageurl = "https://profile.line-scdn.net/"+userprop.pictureUrl.split('/')[userprop.pictureUrl.split('/').length-1]; 
+  var statusMessage = (typeof userprop.statusMessage ==='undefined')? "":userprop.statusMessage;
+  return {userId:userid,displayName:userprop.displayName,imageurl:imageurl,statusMessage:statusMessage};
+}
+
+baseClass_.getRoomMember = function(roomid,userid)
+{
+  var url = 'https://api.line.me/v2/bot/room/'+roomid+'/member/'+userid+'/';
+  var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'get',
+    });
+  var userprop = JSON.parse(response);    
+  var imageurl ="";
+  if(typeof userprop.pictureUrl !=='undefined')
+    imageurl = "https://profile.line-scdn.net/"+userprop.pictureUrl.split('/')[userprop.pictureUrl.split('/').length-1]; 
+  var statusMessage = (typeof userprop.statusMessage ==='undefined')? "":userprop.statusMessage;  
+  var statusMessage = (typeof userprop.statusMessage ==='undefined')? "":userprop.statusMessage;
+  return {userId:userid,displayName:userprop.displayName,imageurl:imageurl,statusMessage:statusMessage};
+}
+
+baseClass_.getGroupIds = function(groupid)
+{
+  //只有認證帳號才能
+  var url = 'https://api.line.me/v2/bot/group/'+groupid+'/member/ids'
+  var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'get',
+    });
+  return response;
+}
+
+baseClass_.leaveGroup = function(groupid)
+{
+    var url = 'https://api.line.me/v2/bot/group/'+groupid+'/leave';
+    var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'post',
+    });
+    return response;
+}
+
+baseClass_.sendLinePush = function(id)
+{
+    var url = 'https://api.line.me/v2/bot/message/push';
+    var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'post',
+      'payload': JSON.stringify(
+        {
+          'to': id,
+          'messages': this.base.Msg,
+        }
+      )
+    });
+    return response;
+}
+
+baseClass_.sendLineReply = function()
+{
+    var url = 'https://api.line.me/v2/bot/message/reply';
+
+     var response = UrlFetchApp.fetch(url, {
+      'headers': {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + this.base.Token,
+      },
+      'method': 'post',
+      'payload': JSON.stringify(
+        {
+          'replyToken': this.base.Data.replyToken,
+          'messages': this.base.Msg,
+        }
+      ),
+    });
+    return response;
+}
+
+
+function LineAudio(url,duration)
+{
+  return {'type': 'audio', 'originalContentUrl': url,'duration':duration };                
+}
+
+function LineVideo(url,thumbnail)
+{
+  return {'type': 'video', 'originalContentUrl': url,'previewImageUrl':thumbnail };                
+}
+
+function LineLocation(title,address,latitude,longitude)
+{
+  return {
+    type: 'location',
+    title: title,
+    address: address,
+    latitude: latitude,
+    longitude: longitude
+  }
+}
+
+function LinePositiveSticker()
+{
+  var sticker = [[1,2],[1,4],[1,5],[1,13],[1,14],[1,114],[1,119],[1,125],[1,132],[1,134],[1,137],[1,138],[1,139],[1,407],[2,34],[2,45],[2,144],[2,164],[2,166],[2,171],[2,172],[2,516],[3,180],[3,184],[3,186],[3,195],[3,200]];
+  var stickno = Math.floor(Math.random() * sticker.length);
+
+  return {"type": "sticker","packageId": sticker[stickno][0].toString(),"stickerId": sticker[stickno][1].toString(),};
+}
+
+function LineMessageAction(label,text)
+{
+  return {
+    "type": "message",
+    "label": label,
+    "text": text
+  }
+}
+
+function LineUriAction(label,url,desktopurl)
+{
+  if(typeof desktopurl ==='undefined') desktopurl=url;
+  return {
+    "type": "uri",
+    "label": label,
+    "uri": url,
+    "altUri": {
+      "desktop": desktopurl
+    }
+  }
+}
+
+function LinePostbackAction(label,data,text)
+{
+  return {
+    "type": "postback",
+    "label": label,
+    "data": data,
+    "displayText": text
+  }
+}
+
+
+function LineFlexCarousel(alterText,bubbles,extra)
+{
+  var obj = {  
+    "type": "flex",
+      "altText": alterText,
+      "contents": {
+        "type": "carousel",
+        "contents": bubbles
+      }
+  };
+  if(typeof extra !=='undefined')
+  {
+    for(var k in extra)
+      obj[k]=extra[k];
+  }
+  return obj;
+}
+
+function LineBubble(content)
+{
+  content.type = 'bubble';
+  return content;
+}
+
+function LineFlexBubble(alterText,bubble,extra)
+{
+  var obj = {  
+    "type": "flex",
+      "altText": alterText,
+      "contents": bubble
+  };
+  if(typeof extra !=='undefined')
+  {
+    for(var k in extra)
+      obj[k]=extra[k];
+  }
+  return obj;
+}
+
+function LineSticker(packageid,stickerid)
+{
+  return {"type": "sticker","packageId": packageid,"stickerId": stickerid,};
+}
+
+function LineImage(url,thumbnail)
+{
+  if(typeof thumbnail ==='undefined')
+    thumbnail=url;
+  return {"type": "image","originalContentUrl": url,"previewImageUrl": thumbnail,};
+}
+   
+function LineText(message)
+{
+  return {"type":"text","text":message};
+}

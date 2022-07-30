@@ -1,0 +1,41 @@
+//BOGO+1小幫手(彤彤爸)
+
+var spreadSheetConfig = SpreadsheetApp.getActive();
+var sheetConfig = spreadSheetConfig.getSheetByName("@_底層參數設定");
+var sheetConfigData = sheetConfig.getSheetValues(3, 3, 20, 3);
+var CHANNEL_ACCESS_TOKEN = sheetConfigData[0][0].replace(/\r?\n|\r/g, "");    //Line Bot 的權杖，並消除換行符號（避免有人複製貼上時複製到換行符號）
+var sheetid = sheetConfigData[1][0];//BOGO試算表ID
+var groupdataidA = sheetConfigData[2][5];//搶購團隊群組ID
+var groupdataidB = sheetConfigData[3][5];//BOGO訂購大群ID
+
+var sheet3 = SpreadsheetApp.openById(sheetid).getSheetByName("產品簡介");
+var sheet4 = SpreadsheetApp.openById(sheetid).getSheetByName("訂單資料庫");
+var sheet41 = SpreadsheetApp.openById(sheetid).getSheetByName("訂單後補接龍");
+var sheet5 = SpreadsheetApp.openById(sheetid).getSheetByName("命令參數設定");
+var sheet6 = SpreadsheetApp.openById(sheetid).getSheetByName("會員名單");
+var sheet7 = SpreadsheetApp.openById(sheetid).getSheetByName("ALL DATA(統計用)");//..................
+var sheet8 = SpreadsheetApp.openById(sheetid).getSheetByName("ALL DATA(統計用)");//...............
+var sheet9A = SpreadsheetApp.openById(sheetid).getSheetByName("搶購回報紀錄");//...............
+var sheet9B = SpreadsheetApp.openById(sheetid).getSheetByName("ALL DATA(統計用)");//...............
+
+var sheet10 = SpreadsheetApp.openById(sheetid).getSheetByName("2_BOGO組織表");
+var sheet11 = SpreadsheetApp.openById(sheetid).getSheetByName("@_參數設定");
+var sheet12 = SpreadsheetApp.openById(sheetid).getSheetByName("群組");
+var sheet20 = SpreadsheetApp.openById(sheetid).getSheetByName("@_底層參數設定");
+
+var option1 = sheet20.getRange(20, 3).getValue();
+var option12 = sheet20.getRange(20, 5).getValue();
+var option2 = sheet20.getRange(21, 3).getValue();
+var option22 = sheet20.getRange(21, 5).getValue();
+var option3 = sheet20.getRange(22, 3).getValue();
+var option4 = sheet20.getRange(23, 3).getValue();
+var option6 = sheet20.getRange(26, 3).getValue();
+var option61 = sheet20.getRange(26, 5).getValue();
+
+var optionText1 = sheet20.getRange(7, 16).getValue();
+var optionText2 = sheet20.getRange(11, 16).getValue();
+var optionText3 = sheet20.getRange(17, 16).getValue();
+var optionText4 = sheet20.getRange(19, 16).getValue();
+var optionText5 = sheet20.getRange(27, 3).getValue();
+
+
