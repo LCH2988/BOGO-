@@ -1,7 +1,13 @@
-<html>
-    <head>
-    </head>
-    <body>
-        Hello World!我是
-    </body>
-</html
+
+     .sendMessages([
+    {
+      type: "text",
+      text: "Hello, World!",
+    },
+  ])
+  .then(() => {
+    console.log("message sent");
+  })
+  .catch((err) => {
+    console.log("error", err);
+  });
